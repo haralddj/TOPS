@@ -8,7 +8,7 @@ import tops.solvers as dps_sol
 if __name__ == '__main__':
 
     # Load model
-    import tops.ps_models.ieee39 as model_data
+    import tops.ps_models.k2a as model_data
     model = model_data.load()
 
     # Power system model
@@ -32,7 +32,6 @@ if __name__ == '__main__':
     # Run simulation
     while t < t_end:
         sys.stdout.write("\r%d%%" % (t/(t_end)*100))
-
         # Short circuit
         if t >= 1 and t <= 1.05:
             ps.y_bus_red_mod[(sc_bus_idx,) * 2] = 1e6

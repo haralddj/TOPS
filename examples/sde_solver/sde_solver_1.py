@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # Load model
     import tops.ps_models.k2a as model_data
     model = model_data.load()
-    model['loads'] = {'DynamicLoadFiltered':  [# model['loads']}
+    model['loads'] = {'DynamicLoadFiltered':  [#model['loads']}
         model['loads'][0] + ['T_g', 'T_b'],
         *[row + [0.1, 0.1] for row in model['loads'][1:]]
     ]}

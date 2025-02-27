@@ -37,7 +37,7 @@ class PowerSystemModel:
 
         elif isinstance(model, dict):
             model_data = model
-        
+
         model = model_data.copy()
         self.model = model
 
@@ -53,7 +53,7 @@ class PowerSystemModel:
 
         self.y_bus_lf = None
         self.power_flow_ready = False
-        
+
         self.setup_ready = False
         self.initialization_ready = False
 
@@ -73,7 +73,7 @@ class PowerSystemModel:
             if key in model and isinstance(model[key], list) and len(model[key]) > 1:
                 model[key] = {default_mdl: model[key]}
 
-        
+
         self.sys_data = {
             's_n': self.s_n,
             'f_n': self.f_n,
@@ -255,7 +255,8 @@ class PowerSystemModel:
                 # p[unit_idx] /= mdl.par['n_par'][unit_idx]
 
             self.load_flow_soln[mdl] = (p + 1j * q) * self.s_n
-        
+
+
         if converged:
             self.power_flow_ready = True
 
@@ -271,7 +272,7 @@ class PowerSystemModel:
         self.red_to_full[self.bus_idx_red] = np.eye(self.n_bus_red)
 
         return y_kk - y_rk.T.dot(np.linalg.inv(y_rr)).dot(y_rk)
-    
+
     def define_state_vector(self):
         self.state_desc = np.empty((0, 2))
         self.n_states = 0
@@ -317,7 +318,7 @@ class PowerSystemModel:
                         input[c['dest_idx']] = source_fun(x, v)[c['source_idx']]
                     return input
                 setattr(mdl, input_key, new_input_fun)
-        
+
         # Initialize state vector
         self.mdl_connections_by_source = mdl_lib.utils.determine_connections(self.dyn_mdls_dict, order_by='output')
         for mdl, connections in self.mdl_connections_by_source.items():
@@ -333,12 +334,13 @@ class PowerSystemModel:
 
                 mdl.init_from_connections(self.x_0, self.v_0, output_values)
 
-    
+
         self.initialization_ready = True
 
-    def state_derivatives(self, t, x, v_red):
-
-        for mdl in self.dyn_mdls:
+    def state_derivatives(self, t, x, v_red):    #Function that is called upon when using the dynamic solvers.
+        #param f: Function that takes time, states and algebraic variables (t, x and v) as arguments and returns state
+        #derivatives
+        for mdl in self.dyn_mdls:                   #Goes through list of dynmodels and resets outputs making them ready for
             mdl.reset_outputs()
             mdl._store_output = True
 

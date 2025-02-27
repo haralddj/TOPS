@@ -8,8 +8,11 @@ import tops.solvers as dps_sol
 if __name__ == '__main__':
 
     # Load model
-    import tops.ps_models.k2a as model_data
+    import examples.user_models.user_lib.ProsjektoppgaveMaster.min_k2a as model_data
     model = model_data.load()
+    model['loads']= {'DynamicLoad': model['loads']}
+    #model['loads'] = {'ConstantPowerLoad': model['loads']}
+
 
     # Power system model
     ps = dps.PowerSystemModel(model=model)

@@ -14,7 +14,7 @@ class EulerDAE_SDE(EulerDAE):
         
 
     def step(self):
-        self.dw = np.random.normal(loc=0.0, scale=np.sqrt(self.dt), size=self.dim_w)
+        self.dw = np.random.normal(loc=0.0, scale=np.sqrt(self.dt*1.1), size=self.dim_w)
         if self.t < self.t_end:
             self.x[:] = self.x + self.f(self.t, self.x, self.v)*self.dt + np.dot(self.b(self.t, self.x, self.v), self.dw)
             self.t += self.dt

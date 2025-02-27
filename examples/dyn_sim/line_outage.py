@@ -5,12 +5,13 @@ import time
 import tops.dynamic as dps
 import tops.solvers as dps_sol
 import importlib
+import numpy as np
 importlib.reload(dps)
 
 if __name__ == '__main__':
 
     # Load model
-    import tops.ps_models.k2a as model_data
+    import tops.ps_models.n44 as model_data
     importlib.reload(model_data)
     model = model_data.load()
 
@@ -42,6 +43,9 @@ if __name__ == '__main__':
             event_flag = False
             ps.lines['Line'].event(ps, ps.lines['Line'].par['name'][0], 'disconnect')
 
+
+
+
         # Simulate next step
         result = sol.step()
         x = sol.y
@@ -53,11 +57,15 @@ if __name__ == '__main__':
         # Store result
         res['t'].append(t)
         res['gen_speed'].append(ps.gen['GEN'].speed(x, v).copy())
+        res['freq'].append((ps.gen['GEN'].speed(x, v).copy()/(2*np.pi))+50)
 
     print('Simulation completed in {:.2f} seconds.'.format(time.time() - t_0))
 
+    #gen1=[res['freq'][0] for freq in res['freq']]
     plt.figure()
-    plt.plot(res['t'], res['gen_speed'])
+    #plt.plot(res['t'], res['gen_speed'])
+    plt.plot(res['t'], res['freq'])
     plt.xlabel('Time [s]')
-    plt.ylabel('Gen. speed')
+    #plt.ylabel('Gen. speed')
+    plt.ylabel('Frequency [Hz]')
     plt.show()

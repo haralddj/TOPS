@@ -137,7 +137,6 @@ class TimeConstantVar(TimeConstant):
            |    K + s*T    |
            |_______________|
 
-
     '''
     def initialize(self, x0, v0, output_value):
         X0 = self.local_view(x0)
@@ -303,6 +302,26 @@ class PIRegulator2Lims(PIRegulator2):
         X0['x'][:] = np.minimum(np.maximum(X0['x'], self.par['x_min']), self.par['x_max'])
         return np.zeros(self.n_units)   
 
+
+class Derivator(DAEModel):
+    def state_list(self):
+        return ['x']
+
+    @output
+    def output(self, x, v):
+        X = self.local_view(x)
+        return self.par('K')*X['x']
+
+
+    def state_derivatives(self, dx, x, v):
+        dX = self.local_view(dx)
+        X = self.local_view(x)
+        dX['x'][:] = self.input(x, v)
+
+    def initialize(self, x0, v0, output_value):
+        X0 = self.local_view(x0)
+        X0['x'][:] = output_value
+        return output_value*0
 
 class WashoutGain(DAEModel):
     '''

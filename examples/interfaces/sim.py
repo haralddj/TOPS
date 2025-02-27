@@ -4,9 +4,9 @@ from tops.simulator import Simulator
 
 if __name__ == '__main__':
 
-    import tops.ps_models.ieee39 as model_data
+    #import tops.ps_models.ieee39 as model_data
     # import ps_models.ieee39 as model_data
-    # import ps_models.sm_ib as model_data
+    import tops.ps_models.sm_ib as model_data
 
     model = model_data.load()
 

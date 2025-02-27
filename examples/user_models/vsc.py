@@ -11,9 +11,11 @@ import importlib
 if __name__ == '__main__':
 
     # Load model
-    import tops.ps_models.k2a as model_data
+    #import tops.ps_models.k2a as model_data
+    import examples.user_models.user_lib.ProsjektoppgaveMaster.min_k2a as model_data
     importlib.reload(model_data)
     model = model_data.load()
+
 
     model['pll'] = {'PLL1':[
         ['name', 'T_filter', 'bus'],

@@ -2,15 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 #Defining constants
-def makeStochastic():
-    theta = 0.05
-    mu=0
-    sigma=0.005
-    T=1000
-    N=1000
+def makeStochastic(theta, mu, sigma, T, N, numSim, Y_init):
     dt=T/N
-    numSim=5
-    Y_init=0
     points=np.full(numSim, Y_init)
     print(points)
 
@@ -20,12 +13,12 @@ def makeStochastic():
         y_new=y+theta*(mu-y)*dt+sigma*dW
         points=np.vstack((points, y_new))
     tt = np.arange(0, T, dt)
+    plt.plot(tt, points)
+    plt.xlabel("Tid $(t)$")
+    plt.ylabel("Verdi $(S_t)$")
+    plt.title(f"Solution of \n $dT_t = \\Theta \\dot (\\mu-Y_t)dt + \\sigma dW_t$\n $Y_0={Y_init}, \\mu = {mu}, \\sigma={sigma}, \\theta = {theta}$")
+    plt.show()
     return points, tt
 
-points,tt=makeStochastic()
+points,tt=makeStochastic(0.05, 1, 0.05, 30, 1000, 1, 0)
 
-plt.plot(tt, points)
-plt.xlabel("Tid $(t)$")
-plt.ylabel("Verdi $(S_t)$")
-plt.title(f"Solution of \n $dT_t = \\Theta \\dot (\\mu-Y_t)dt + \\sigma dW_t$\n $Y_0={0}, \\mu = {0}, \\sigma={2}$")
-plt.show()

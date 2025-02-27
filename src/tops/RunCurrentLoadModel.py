@@ -11,17 +11,31 @@ import importlib
 if __name__ == '__main__':
 
     # Load model
-    import tops.ps_models.k2a as model_data
+    import examples.user_models.user_lib.ProsjektoppgaveMaster.min_k2a as model_data
     importlib.reload(model_data)
     model = model_data.load()
 
-    model['vsc'] = {'VSC': [
-        ['name',    'T_pll',    'T_i',  'bus',  'P_K_p',    'P_K_i',    'Q_K_p',    'Q_K_i',    'P_setp',   'Q_setp',   ],
-        ['VSC1',    0.1,        1,      'B8',   0.1,        0.1,        0.1,        0.1,        100,          100],
+
+    model['loads'] = {'LoadAsCurrent': [
+        ['name', 'T_i', 'bus', 'P_setp', 'Q_setp', 'K', 'T_v', 'whiteNoiseP', 'whiteNoiseQ'],
+        ['Load1', 1, 'B8',      100,        100,   0.1,   0.1,     0.1,             0.1],
     ]}
 
+    model['pll'] = {'PLL1':[
+        ['name', 'T_filter', 'bus'],
+        *[[f'PLL{i}', 0.1, bus[0]] for i, bus in enumerate(model['buses'][1:])],
+    ]}
+
+    model['vsc'] = {'VSC': [
+        ['name',    'T_pll',    'T_i',  'bus',  'P_K_p',    'P_K_i',    'Q_K_p',    'Q_K_i',    'P_setp',   'Q_setp'],
+        # *[[f'VSC{i}', 0.1, 1, bus[0], 0.1, 0.1, 0.1, 0.1, 0.1, 0] for i, bus in enumerate(model['buses'][1:])],
+        ['VSC1',    0.1,        1,      'B8',   0.01,        1e-12,        0.1,        0.1,        100,          100],
+    ]}
+
+
+
     # Power system model
-    ps = dps.PowerSystemModel(model=model)
+    ps = dps.PowerSystemModel(model=model, user_mdl_lib=user_lib)
     ps.init_dyn_sim()
     print(max(abs(ps.ode_fun(0, ps.x_0))))
 
@@ -45,8 +59,6 @@ if __name__ == '__main__':
 
         if t > 1:
             ps.vsc['VSC'].set_input('P_setp', 500)
-        if t > 5:
-            ps.vsc['VSC'].set_input('Q_setp', 200)
 
         # Simulate next step
         result = sol.step()
@@ -59,22 +71,14 @@ if __name__ == '__main__':
         # Store result
         res['t'].append(sol.t)
         res['gen_speed'].append(ps.gen['GEN'].speed(x, v).copy())
-        res['VSC_P'].append(ps.vsc['VSC'].P(x, v).copy())
-        res['VSC_P_setp'].append(ps.vsc['VSC'].P_setp(x, v).copy())
-
-        res['VSC_Q'].append(ps.vsc['VSC'].Q(x, v).copy())
-        res['VSC_Q_setp'].append(ps.vsc['VSC'].Q_setp(x, v).copy())
+        res['VSC_power'].append(ps.vsc['VSC'].P(x, v).copy())
 
     print('Simulation completed in {:.2f} seconds.'.format(time.time() - t_0))
 
-    # plt.figure()
-    # plt.plot(res['t'], res['gen_speed'])
-    # plt.show()
+    plt.figure()
+    plt.plot(res['t'], res['gen_speed'])
+    plt.show()
 
-    fig, ax = plt.subplots(2)
-    ax[0].plot(res['t'], res['VSC_P'])
-    ax[0].plot(res['t'], res['VSC_P_setp'])
-
-    ax[1].plot(res['t'], res['VSC_Q'])
-    ax[1].plot(res['t'], res['VSC_Q_setp'])
+    plt.figure()
+    plt.plot(res['t'], res['VSC_power'])
     plt.show()

@@ -1,0 +1,178 @@
+import sys
+from collections import defaultdict
+import matplotlib.pyplot as plt
+import time
+import tops.dynamic as dps
+import tops.solvers as dps_sol
+import importlib
+import scipy
+from examples.user_models.user_lib.MyTools.Statistics import plot_normalDistribution, plotFFT, CompareAutocorrelations, EulerMaryama, getAutocorrelationData, MakeEulerMaryamaList
+from examples.user_models.user_lib.MyTools.Functions import *
+
+importlib.reload(dps)
+import numpy as np
+
+from tops.dyn_models.utils import DAEModel
+
+
+class ConstPowerLoad(DAEModel):
+    def __init__(self, data, sys_par, **kwargs):
+        super().__init__(data, sys_par, **kwargs)
+        self.data = data
+        self.par = data
+        self.n_units = len(data)
+
+        self.bus_idx = np.array(np.zeros(self.n_units), dtype=[(key, int) for key in self.bus_ref_spec().keys()])
+        self.bus_idx_red = np.array(np.zeros(self.n_units), dtype=[(key, int) for key in self.bus_ref_spec().keys()])
+        self.sys_par = sys_par  # {'s_n': 0, 'f_n': 50, 'bus_v_n': None}
+
+    def bus_ref_spec(self):
+        return {'terminal': self.par['bus']}
+
+    def reduced_system(self):
+        return self.par['bus']
+
+    def load_flow_pq(self):
+        return self.bus_idx['terminal'], self.par['P'], self.par['Q']
+
+    def apparent_power_injections(self, x, v):
+        s_inj = -(self.par['P'] + 1j * self.par['Q']) / self.sys_par['s_n']
+        return self.bus_idx_red['terminal'], s_inj
+
+
+if __name__ == '__main__':
+
+    # Load model
+    import tops.ps_models.sm_load as model_data
+    importlib.reload(model_data)
+    model = model_data.load()
+    model['loads'] = {  # 'ConstPowerLoad': model['loads']}
+        #'Load': [model['loads'][ix] for ix in [0, 1]],
+        'ConstPowerLoad': [model['loads'][ix] for ix in [0, 1]]}
+
+    user_mdl_lib = type('', (), {'loads': type('', (), {'ConstPowerLoad': ConstPowerLoad})})
+    hasattr(getattr(user_mdl_lib, 'loads'), 'ConstPowerLoad')
+
+    # Power system model
+    ps = dps.PowerSystemModel(model=model, user_mdl_lib=user_mdl_lib)
+    ps.loads['ConstPowerLoad'].par['Q'] = 200.0
+    ps.init_dyn_sim()
+    print(max(abs(ps.state_derivatives(0, ps.x_0, ps.v_0))))
+
+    v = ps.solve_algebraic(0, ps.x0, ps.v_0)
+    max(abs(v - ps.v_0))
+
+    t_end = 500
+    x_0 = ps.x_0.copy()
+
+    # Solver
+    sol = dps_sol.ModifiedEulerDAE(ps.state_derivatives, ps.solve_algebraic, 0, x_0, ps.v0, t_end, max_step=0.02)
+
+    # Initialize simulation
+    t = 0
+    res = defaultdict(list)
+    t_0 = time.time()
+
+    sc_bus_idx = ps.gen['GEN'].bus_idx_red['terminal'][0]
+
+    p_0 = ps.loads['ConstPowerLoad'].par['P'][0]
+    line_mdl = ps.lines['Line']
+
+
+    def p_bus_7(x, v):
+        line_p = line_mdl.p_from(x, v)
+        line_p_to = line_mdl.p_to(x, v)
+        return - ps.s_n * (line_p_to[0] + line_p[0])# + line_p[3])
+
+
+    def q_bus_7(x, v):
+        line_q = line_mdl.q_from(x, v)
+        line_q_to = line_mdl.q_to(x, v)
+        return - ps.s_n * (line_q_to[0] + line_q[0])# + line_q[3])
+
+
+    p_bus_7(ps.x0, ps.v0)
+    967 / 900
+    # line_mdl.par[3]
+    print(ps.loads['ConstPowerLoad'].par)
+
+    ###############################
+
+    theta=10
+    mu_p=p_0
+    print("mup", mu_p)
+    sigma_p=2
+    sigma_q=0
+
+    idx1=0
+    # Run simulation
+    while t < t_end:
+        sys.stdout.write("\r%d%%" % (t / (t_end) * 100))
+        # print(t)
+
+        if t>1:  # < 1.1:
+            ps.loads['ConstPowerLoad'].par['P'][0] = EulerMaryama(theta, mu_p, sigma_p, 0.02, ps.loads['ConstPowerLoad'].par['P'][0])
+            # if (idx1 > 1):
+            #     nyList.append(EulerList[idx1] - EulerList[idx1 - 1])
+            #     ps.loads['ConstPowerLoad'].par['P'][0] += EulerList[idx1] - EulerList[idx1 - 1]
+            #     # ps.loads['ConstPowerLoad'].par['Q'][0]=EulerMaryama(theta, mu_q, sigma_q, time_step, last_value_q)
+            # idx1 += 1
+
+        # Simulate next step
+        result = sol.step()
+        x = sol.y
+        v = sol.v
+        t = sol.t
+
+        # dx = ps.ode_fun(0, ps.x_0)
+
+        # Store result
+        res['t'].append(t)
+        res['gen_angle'].append(ps.gen['GEN'].angle(x, v).copy())
+        res['gen_speed'].append(ps.gen['GEN'].speed(x, v).copy())
+        res['v'].append(v.copy())
+        res['p_bus_7'].append(p_bus_7(x, v).copy())
+        res['q_bus_7'].append(q_bus_7(x, v).copy())
+        # res['load_P'].append(ps.loads['ConstPowerLoad'].P(x, v).copy())
+        # res['load_Q'].append(ps.loads['ConstPowerLoad'].Q(x, v).copy())
+        res['iterations'].append(ps.it_prev)
+
+    print('Simulation completed in {:.2f} seconds.'.format(time.time() - t_0))
+
+    fig = plt.figure()
+    plt.plot(res['t'], res['gen_speed'])
+    plt.xlabel('Time [s]')
+    plt.ylabel('Gen speed')
+
+    fig = plt.figure()
+    plt.plot(res['t'], res['gen_angle'])
+    plt.xlabel('Time [s]')
+    plt.ylabel('Gen angle')
+
+    fig = plt.figure()
+    plt.plot(res['t'], np.abs(res['v']))
+    plt.xlabel('Time [s]')
+    plt.ylabel('Bus voltage magnitude')
+
+
+    fig = plt.figure()
+    plt.plot(res['t'], res['iterations'])
+
+    fig = plt.figure()
+
+    fig = plt.figure()
+    plt.plot(res['t'], np.abs(res['p_bus_7']))
+    plt.xlabel('Power at bus 7')
+    plt.ylabel('MW')
+
+    fig = plt.figure()
+    plt.plot(res['t'], np.abs(res['q_bus_7']))
+    plt.xlabel('Reactive power at bus 7')
+    plt.ylabel('MW')
+
+    # fig = plt.figure()
+    # plt.plot(res['t'], np.abs(res['load_Q']))
+    # plt.xlabel('Time [s]')
+    # plt.ylabel('MVA')
+
+    plt.show()

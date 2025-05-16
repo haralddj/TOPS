@@ -183,7 +183,7 @@ def downInertia(model, delta):
 def create_Gp(T1, T2, At, Tr, r, Tf, Tg, R, H, Kd,Dg,Tdel):
     Gt = At * (1 - s * T1) / (1 + s * T2)
     Gc = (1 + s * Tr) / (r * (1 + s * Tf) * Tr * s + R * (1 + s * Tr))
-    Gs = (sp.exp(-s * Tdel) / (1 + s * Tg))  #SGate Servomotor
+    Gs = (1 / (1 + s * Tg))  #SGate Servomotor
     Gj = 1 / (2 * H * s + Kd)
     Gp = (Gt * Gc * Gs)+Dg
     #Gp=((1+Tr*s)/R)/((Tf*Tr*Tg/R)*s**3+((Tf+Tr)*Tg/R)*s**2+((Tg+Tr*(R+r))/R)*s+1)*Gt+Dg
@@ -215,7 +215,8 @@ def checkGetTf(model):
         Ppu = gen[4] / gen[2]
 
         # Calculate q0, T1, T2, and Dg
-        q0 = (Ppu + (A_t * q_nl)) / (A_t - (0 * Dt))  # From linearization
+        # From linearization
+        q0 = (Ppu + (A_t * q_nl)) / (A_t - (0 * Dt)) 
         T1 = (q0 - q_nl) * Tw
         T2 = q0 * Tw / 2
         Dg = q0 * Dt
@@ -274,7 +275,24 @@ def returnSystemTf(model_data):
 
     GFCR_N_k2a = (DeltaP_FCRN_K2a / Deltaf_FCRN) * (f_0 / S_n_FCRN_k2a) * 1 / (2 * Hsys * s)# + 0.05 * f_0)
 
+    Stab_line=GFCR_N_k2a*2.31
+    numeratorStab, denominatorStab = sp.fraction(Stab_line)
+    numerator_coeffs_stab = [float(c) for c in sp.Poly(numeratorStab, s).all_coeffs()]
+    denominator_coeffs_stab = [float(c) for c in sp.Poly(denominatorStab, s).all_coeffs()]
+    tf_stab = TransferFunction(numerator_coeffs_stab, denominator_coeffs_stab)
 
+    omega = np.logspace(-5, 3, 500)  # Frequency range for Bode plot
+    # Compute the Bode plot
+    # w_stab, mag_stab, phase_stab = bode(tf_stab, w=omega)
+    # mag_stab = (10 ** (mag_stab / 20)) 
+    # print("Stab line:", mag_stab)
+
+    # df_stab = pd.DataFrame({'w_stab': w_stab, 'mag_stab': mag_stab})
+    # outdir = r'C:\Users\haral\PycharmProjects\ProsjektOppgaveTOPS\Figures\FrequencyPlots'
+    # os.makedirs(outdir, exist_ok=True)
+    # df_stab.to_csv(os.path.join(outdir, 'stabilityLineK2A.csv'), index=False)
+
+    
     # Get the list of transfer functions (F)
     F_list = checkGetTf(model)
 

@@ -76,6 +76,11 @@ if __name__ == '__main__':
 
     v = ps.solve_algebraic(0, ps.x0, ps.v_0)
     max(abs(v - ps.v_0))
+    
+    df = pd.read_csv(r'C:\Users\haral\PycharmProjects\ProsjektOppgaveTOPS\Figures\disturbance\disturbance.csv')
+
+    disturbance_values = df['disturbance'].tolist()
+    freq_values = df['avg_freq_dev'].tolist()
 
 
 
@@ -84,7 +89,7 @@ if __name__ == '__main__':
     # ----------------------------------
     # Setup simulation parameters
     # ----------------------------------
-    t_end = 200
+    t_end = 10
     x_0 = ps.x_0.copy()
     time_step = 0.02
     sol = dps_sol.ModifiedEulerDAE(ps.state_derivatives, ps.solve_algebraic, 0, x_0, ps.v0,t_end, max_step=time_step)
@@ -117,10 +122,10 @@ if __name__ == '__main__':
     #p_1=ps.loads['ConstPowerLoad'].par['P'][1]
     q_0 = ps.loads['ConstPowerLoad'].par['Q'][0]
 
-    theta = 0.003
+    theta = 0.002
     mu_p, mu_q = p_0, q_0
     #mu_p1=p_1
-    sigma_p, sigma_q = 1.2, 0.1
+    sigma_p, sigma_q = 1.3, 0.1
 
     listGenInitial=list(ps.gen['GEN'].par['P'])
     print(ps.f_n)
@@ -129,6 +134,7 @@ if __name__ == '__main__':
     # Simulation loop
     # ----------------------------------
     LoadChange=40
+    disturbanceList=[]
 
     eventflag=True
     while t < t_end:
@@ -136,30 +142,17 @@ if __name__ == '__main__':
 
 
         if t > 0:
-            ps.loads['ConstPowerLoad'].par['P'][0] = p_0+np.sin(0.1*t)*8.4          #EulerMaryama(theta, mu_p, sigma_p, time_step, ps.loads['ConstPowerLoad'].par['P'][0])
+            #step=EulerMaryama(theta, mu_p, sigma_p, time_step, ps.loads['ConstPowerLoad'].par['P'][0])
+            #disturbanceList.append(step-p_0)
+            ps.loads['ConstPowerLoad'].par['P'][0] = EulerMaryama(theta, mu_p, sigma_p, time_step, ps.loads['ConstPowerLoad'].par['P'][0])
+            idx1+=1
             #ps.loads['ConstPowerLoad'].par['Q'][0] = EulerMaryama(theta, mu_q, sigma_q, time_step, ps.loads['ConstPowerLoad'].par['Q'][0])
+        #p_0+np.sin(0.1*t)*8.4 
 
-
-
-        # result = sol.step()
-        # x, v, t = sol.y, sol.v, sol.t
-        # if idx1 == 3:
-        #     oldSpeed = x[ps.gen['GEN'].state_idx['speed']].copy()
-
-        # if t > 5:
-        #     for i, idx in enumerate(ps.gen['GEN'].state_idx['speed']):
-        #         x[idx] = oldSpeed[i] - 0.072
 
 
         result = sol.step()
         x, v, t = sol.y, sol.v, sol.t
-
-        # if t>3 and eventflag:
-        #     eventflag=False
-        #     ps.gov['HYGOV'].int_par['bias'][0]+= 0.01
-        #     ps.gov['HYGOV'].int_par['bias'][1] += 0.01
-        #     ps.gov['HYGOV'].int_par['bias'][2] += 0.01
-        #     ps.gov['HYGOV'].int_par['bias'][3] += 0.01
 
         res['t'].append(t)
         res['gen_speed'].append(ps.gen['GEN'].speed(x, v).copy())
@@ -180,12 +173,23 @@ if __name__ == '__main__':
     # ----------------------------------
     data = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_7.csv')
 
+
+    disturbance_folder = r'C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/Figures/disturbance'
+    os.makedirs(disturbance_folder, exist_ok=True)
+    disturbance_path = os.path.join(disturbance_folder, 'disturbance.csv')
+
+    # Save as DataFrame
+    avg_freq_dev = [(np.mean(freq)-50) for freq in res['freq']]
+    import pandas as pd
+    df_disturbance = pd.DataFrame({'time': res['t'][:len(disturbanceList)], 'disturbance': disturbanceList, 'avg_freq_dev': avg_freq_dev[:len(disturbanceList)]})
+    df_disturbance.to_csv(disturbance_path, index=False)
+    print(f"Saved disturbance data to {disturbance_path}")
+
+    avg_freq = [np.mean(freq) for freq in res['freq']]
     freq2 = data['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
     time2 = data['Time [s]'][2:(len(res['t']) + 2)]
-    avg_freq = [np.mean(freq) for freq in res['freq']]
 
     timeOutage, freqOutage=GetFreqData('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/Outage-anonymous_(1)/Outage-anonymous.xlsx', 'FI south:Frequency')
-    #timeNormal, freqNormal=GetFreqDataCSV('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/Taajuusdata2024-05-01.csv','Value')
 
     freqOutage=freqOutage[0:2000]
     timeOutage=timeOutage[0:2000]
@@ -210,9 +214,10 @@ if __name__ == '__main__':
     # for gen_idx, gen_freq in enumerate(zip(*res['freq']), start=1):  # Transpose res['freq'] to iterate over generators
     #     plt.plot(res['t'], gen_freq, label=f"Generator {gen_idx}", color=colors[gen_idx - 1])
 
-
-    #plt.plot(res['t'], exp_freq, label='Expected Frequency', color=colors[1])
     plt.plot(res['t'], avg_freq, label='Simulated Frequency', color=colors[3])
+    #plt.plot(res['t'], exp_freq, label='Expected Frequency', color=colors[1])
+    # plt.plot(res['t'], avg_freq, label='Simulated Frequency with PSS', color=colors[3])
+    # plt.plot(res['t'][:-1], [(i+50) for i in freq_values], label='Simulated Frequency w/o PSS', color=colors[1], linestyle='dashed')
     plt.plot(time2, freq2, label='Measured Frequency', color=colors[1])
     # plt.plot(timeOutage, freqOutage, label='Measured Frequency', color=colors[1])
     # Add labels, title, and legend
@@ -226,12 +231,7 @@ if __name__ == '__main__':
     plt.legend()
     plt.savefig('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/Figures/FrequencyPlots/grid_frequency_plot.pdf', format='pdf', bbox_inches='tight')
 
-    # #Plot angle
-    # plt.figure()
-    # plt.plot(res['t'], res['gen_angle'], label='Generator Angle', color=colors[0])
-    # plt.xlabel('Time [s]')
-    # plt.ylabel('Generator Angle [rad]')
-    # plt.legend()
+
 
 
     # Plot load data
@@ -245,15 +245,6 @@ if __name__ == '__main__':
     plt.ylabel('MW and MVAR')
     plt.legend()
 
-    # #Plot Gen Power
-    # plt.figure()
-    print("Initial Gen Power:", sum(res['gen_power'][0]))
-    print("Final Gen Power:", sum(res['gen_power'][-1]))
-    # plt.plot(res['t'], np.abs(res['gen_power']), label="Generator Power")
-    # plt.plot(res['t'], np.abs(res['gen_reactive_power']), label="Generator Reactive Power") 
-    # plt.xlabel('Time [s]')
-    # plt.ylabel('Generator Power [MW]')
-    # plt.legend()
 
     #Extract voltage at bus 7 and 9
     v_bus_7 = np.array([v[ps.bus_idx_red[6]] for v in res['v']])
@@ -307,10 +298,22 @@ if __name__ == '__main__':
     if run_codeFFT == 'y':
             # Unpack the lists returned by calculateSystemTf
         w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_reqs, actualReq = calculateSystemTf(model_data)
+
+        # Read the CSV file
+        stability_df = pd.read_csv(r'C:\Users\haral\PycharmProjects\ProsjektOppgaveTOPS\Figures\FrequencyPlots\stabilityLineK2A.csv')
+
+        # Extract columns as numpy arrays or lists
+        w_stab = stability_df['w_stab'].values  # or .tolist() if you want a list
+        mag_stab = stability_df['mag_stab'].values 
+
         # Compute FFT data
         p_fft_freq_rad, p_fft_mag = makeFFT(((
             (res['p_bus_7']) - np.mean(res['p_bus_7']))/60), time_step)
-
+        
+        # f_fft_freq_rad, f_fft_mag= makeFFT(((
+        #     (avg_freq) - np.mean(avg_freq))/0.1), time_step)
+        
+        # ratio_mag= p_fft_mag/f_fft_mag
 
         # Fit a low-pass filter to the FFT data
         def func(x, a):
@@ -371,20 +374,19 @@ if __name__ == '__main__':
         # Create a new figure for the plot
         plt.figure()
 
-        # Plot all elements in w_k2a_list and mag_k2a_list
-        # for idx, (w_k2a, mag_k2a) in enumerate(zip(w_k2a_list, mag_k2a_list), start=1):
-        #     plt.semilogx(w_k2a, mag_k2a, label=f"G_req-n magnitude K2A {idx}", color='blue', alpha=0.5)
+        plt.plot(w_k2a_list[0], mag_k2a_list[0], label="Generator 1 Magnitude", color='darksalmon', alpha=0.8) 
+        plt.plot(w_k2a_list[1], mag_k2a_list[1], label="Generator 2 Magnitude", color='olive', alpha=0.8)
+        plt.plot(w_k2a_list[2], mag_k2a_list[2], label="Generator 3 Magnitude", color='skyblue', alpha=0.8)
+        plt.plot(w_k2a_list[3], mag_k2a_list[3], label="Generator 4 Magnitude", color='plum', alpha=0.8)  
+        plt.plot(w_stab, mag_stab, label="Stability Requirement", color='blue', alpha=0.7) 
 
-        plt.plot(w_k2a_list[0], mag_k2a_list[0], label="G_req-n magnitude K2A", color='blue', alpha=0.7)    
-        # Plot all elements in w_req_list and mag_req_list
-        for idx, (w_req, mag_req) in enumerate(zip(w_req_list, mag_req_list), start=1):
-            plt.semilogx(w_req, mag_req, label=f"Requirement magnitude {idx}", linestyle='dashed', color='darkred', alpha=0.7)
 
         # Plot the FFT data
         plt.semilogx(p_fft_freq_rad, 1/p_fft_mag, label="FFT of P at bus 7", color=colors[3], alpha=0.6)
 
         #Plot TSO filter
         plt.semilogx(w_reqs, 1/actualReq, label="1/D(s)", color=colors[4], linestyle='dashed')
+        plt.semilogx(w_stab, mag_stab, label="Stability Requirement", color='maroon', alpha=0.8, linestyle='dashed')
 
         # Plot the fitted low-pass filter
         plt.semilogx(w_req_dist, 1/disturbanceReq, label="Best low-pass filter describing FFT", color=colors[2], linestyle='dotted')

@@ -203,7 +203,7 @@ if run_code == 'y':
     ax.plot(x, y, label='Normal Distribution')
     plot_normalDistribution(avg_freq, ax=ax, label='Simulated Frequency PDF')
     plot_normalDistribution(freq2, ax=ax, label='Real Data Frequency PDF')
-    plot_normalDistribution(totalPSD, ax=ax, label='Total Frequency PDF')
+    # plot_normalDistribution(totalPSD, ax=ax, label='Total Frequency PDF')
     plt.legend()
     plt.show()
 
@@ -234,8 +234,10 @@ if run_codeFFT == 'y':
         print("Timedelay constant of fitted low-pass filter, fft simulations:", popt_fft)
         #print("Timedelay constant of fitted low-pass filter, welch simulations:", popt_welch)
 
-        plt.semilogx(w_k2a, mag_k2a, label="G_req-n magnitude K2A", color='blue')  # Magnitude in absolute terms
-        plt.semilogx(w_k2a, 0.9 * mag_k2a, label="G_req-n magnitude K2A with reduction factor", color='green')  # Magnitude in absolute terms
+        plt.semilogx(w, mag, label="G_req-n magnitude", color='black')  # Magnitude in absolute terms
+
+        #plt.semilogx(w_k2a, mag_k2a, label="G_req-n magnitude K2A", color='blue')  # Magnitude in absolute terms
+        #plt.semilogx(w_k2a, 0.9 * mag_k2a, label="G_req-n magnitude K2A with reduction factor", color='green')  # Magnitude in absolute terms
         plt.semilogx(w_req, mag_req, label="Requirement magnitude", linestyle='dashed', color='darkred')  # Magnitude in absolute terms
 
         #plt.semilogx(welch_freq_rad, 1/welch_mag, label="Welch of P at bus 2", color='black')

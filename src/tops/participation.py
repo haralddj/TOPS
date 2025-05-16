@@ -122,11 +122,16 @@ class EigenvaluePlotter:
 def main():
     import tops.examples.user_models.user_lib.ProsjektoppgaveMaster.k2aTuning as model_data
     #import tops.ps_models.k2a as model_data
+    import tops.ps_models.n45_tuned as model_data
     model = model_data.load()
+
+    loadIndexes=[i for i in range(0, len(model['loads']))]
+
     #model['loads'] = {'DynamicLoad': model['loads']}
-    model['loads'] = {#'Load': [model['loads'][ix] for ix in [0, 2]],
-         'ConstPowerLoad': [model['loads'][ix] for ix in [0, 1, 2]]
-    }
+    # model['loads'] = {#'Load': [model['loads'][ix] for ix in [0, 2]],
+    #      'ConstPowerLoad': [model['loads'][ix] for ix in [0, 1, 2]]
+    # }
+    model['loads'] = {'ConstPowerLoad': [model['loads'][ix] for ix in loadIndexes]}
 
     user_mdl_lib = type('', (), {'loads': type('', (), {'ConstPowerLoad': ConstPowerLoad})})
     ps = dps.PowerSystemModel(model=model, user_mdl_lib=user_mdl_lib)

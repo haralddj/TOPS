@@ -62,13 +62,12 @@ if __name__ == '__main__':
 
     loadIndexes=[i for i in range(0, len(model['loads']))]
     #removing idx 1:
-    loadIndexes.remove(29)
+    #loadIndexes.remove(29)
 
 
 
     model['loads'] = { # 'ConstPowerLoad': model['loads']}
-        'Load': [model['loads'][ix] for ix in loadIndexes],
-        'ConstPowerLoad': [model['loads'][ix] for ix in [0, 29]]}
+        'ConstPowerLoad': [model['loads'][ix] for ix in loadIndexes]}
 
 
     user_mdl_lib = type('', (), {'loads': type('', (), {'ConstPowerLoad': ConstPowerLoad})})
@@ -85,7 +84,7 @@ if __name__ == '__main__':
     # ----------------------------------
     # Setup simulation parameters
     # ----------------------------------
-    t_end = 100
+    t_end = 200
     x_0 = ps.x_0.copy()
     time_step = 0.02
     sol = dps_sol.ModifiedEulerDAE(ps.state_derivatives, ps.solve_algebraic, 0, x_0, ps.v0, t_end, max_step=time_step)
@@ -97,11 +96,6 @@ if __name__ == '__main__':
     sc_bus_idx = ps.gen['GEN'].bus_idx_red['terminal'][0]
     line_mdl = ps.lines['Line']
 
-    def p_bus_5321(x, v):
-        return -ps.s_n * (line_mdl.p_to(x, v)[1] + line_mdl.p_from(x, v)[2] + line_mdl.p_from(x, v)[3])
-
-    def q_bus_5321(x, v):
-        return -ps.s_n * (line_mdl.q_to(x, v)[1] + line_mdl.q_from(x, v)[2] + line_mdl.q_from(x, v)[3])
 
     
     def p_bus_5321(x, v):
@@ -122,12 +116,12 @@ if __name__ == '__main__':
     vec1 = np.arange(0, 300000, 0.02)
     idx1 = 0
 
-    p_0 = ps.loads['ConstPowerLoad'].par['P'][0]
-    q_0 = ps.loads['ConstPowerLoad'].par['Q'][0]
+    p_0 = ps.loads['ConstPowerLoad'].par['P'][28]
+    q_0 = ps.loads['ConstPowerLoad'].par['Q'][29]
 
-    theta = 0.008
+    theta = 0.002
     mu_p, mu_q = p_0, q_0
-    sigma_p, sigma_q = 400, 2
+    sigma_p, sigma_q = 13, 2
 
     listGenInitial=list(ps.gen['GEN'].par['P'])
     print(ps.f_n)
@@ -141,36 +135,15 @@ if __name__ == '__main__':
         sys.stdout.write("\r%d%%" % (t / t_end * 100))
 
 
-        if t > vec1[idx1]:
-            ps.loads['ConstPowerLoad'].par['P'][0] =  EulerMaryama(theta, mu_p, sigma_p, time_step, ps.loads['ConstPowerLoad'].par['P'][0])
+        if t > 0:
+            ps.loads['ConstPowerLoad'].par['P'][28] =  p_0+300                      #EulerMaryama(theta, mu_p, sigma_p, time_step, ps.loads['ConstPowerLoad'].par['P'][28])
             idx1 += 1
-            # ps.gen['GEN'].set_input('P_m', listGenInitial[0], 0)
-            # ps.gen['GEN'].set_input('P_m', listGenInitial[1], 1)
-            # ps.gen['GEN'].set_input('P_m', listGenInitial[2], 2)
-            # ps.gen['GEN'].set_input('P_m', listGenInitial[3], 3)
-            # 
 
-
-
-        # result = sol.step()
-        # x, v, t = sol.y, sol.v, sol.t
-        # if idx1 == 3:
-        #     oldSpeed = x[ps.gen['GEN'].state_idx['speed']].copy()
-
-        # if t > 5:
-        #     for i, idx in enumerate(ps.gen['GEN'].state_idx['speed']):
-        #         x[idx] = oldSpeed[i] - 0.072
 
 
         result = sol.step()
         x, v, t = sol.y, sol.v, sol.t
 
-        # if t>3 and eventflag:
-        #     eventflag=False
-        #     ps.gov['HYGOV'].int_par['bias'][0]+= 0.01
-        #     ps.gov['HYGOV'].int_par['bias'][1] += 0.01
-        #     ps.gov['HYGOV'].int_par['bias'][2] += 0.01
-        #     ps.gov['HYGOV'].int_par['bias'][3] += 0.01
 
         res['t'].append(t)
         res['gen_speed'].append(ps.gen['GEN'].speed(x, v).copy())
@@ -178,7 +151,7 @@ if __name__ == '__main__':
         res['v'].append(v.copy())
         res['p_bus_5321'].append(p_bus_5321(x, v).copy())
         res['q_bus_5321'].append(q_bus_5321(x, v).copy())
-        res['freq'].append(((ps.gen['GEN'].speed(x, v).copy() * 50) / (2 * np.pi)) + 50)
+        res['freq'].append(((ps.gen['GEN'].speed(x, v).copy() * 50)) + 50)
         res['gen_power'].append(ps.gen['GEN'].P_e(x,v).copy())
         res['iterations'].append(ps.it_prev)
 
@@ -228,10 +201,10 @@ if __name__ == '__main__':
 
     # Plot load data
     plt.figure()
-    plt.plot(res['t'], np.abs(res['p_bus_5321']), label="Real Power at bus 7", color=colors[3])
-    #plt.plot(res['t'], np.abs(res['q_bus_5321']), label="Reactive Power at bus 7")
+    plt.plot(res['t'], np.abs(res['p_bus_5321']), label="Real Power at bus 5321", color=colors[3])
+    plt.plot(res['t'], np.abs(res['q_bus_5321']), label="Reactive Power at bus 5321", color=colors[1])
 
-    plt.xlabel('Real and Reactive power at bus 7')
+    plt.xlabel('Real and Reactive power at bus 5321')
     plt.ylabel('MW and MVAR')
     plt.legend()
 
@@ -293,13 +266,11 @@ if __name__ == '__main__':
     run_codeFFT = input("Plot Load FFT? (y/n): ").strip().lower()
     if run_codeFFT == 'y':
             # Unpack the lists returned by calculateSystemTf
-        w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_reqs, actualReq = calculateSystemTf(model_data)
+        #w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_reqs, actualReq = calculateSystemTf(model_data)
 
         # Compute FFT data
-        p_fft_freq_rad, p_fft_mag = makeFFT(
-            (np.abs(res['p_bus_5321']) - np.mean(np.abs(res['p_bus_5321'])) + (np.abs(res['p_bus_9']) - np.mean(np.abs(res['p_bus_9'])))) / 51.4,
-            time_step
-        )
+        p_fft_freq_rad, p_fft_mag = makeFFT(np.abs(res['p_bus_5321']) - np.mean(np.abs(res['p_bus_5321'])) / 600, time_step)
+
 
         # Fit a low-pass filter to the FFT data
         def func(x, a):
@@ -308,27 +279,72 @@ if __name__ == '__main__':
         popt_fft, pcovv_fft = scipy.optimize.curve_fit(func, p_fft_freq_rad, p_fft_mag)
         print("Timedelay constant of fitted low-pass filter, FFT simulations:", popt_fft)
 
+        def lp_filter(x, a):
+            return 1 / (a * x + 1)
+
+        # Frequency threshold (e.g., 5e-2 rad)
+        freq_threshold = 5e-2
+
+        # Apply constraint only to the data above this frequency
+        mask = p_fft_freq_rad > freq_threshold
+        x_constrained = p_fft_freq_rad[mask]
+        y_constrained = p_fft_mag[mask]
+
+        # # Objective: Minimize 'a' (or keep flat if you just want the tightest fit)
+        # def objective(a):
+        #     return -a[0]  # Could be 0 if you just want a valid a
+
+        # # Constraint: Above-threshold filter output must be ≥ FFT magnitude
+        # slack_eps = 5e-4  # Small slack to avoid numerical issues
+        # def constraint(a):
+        #     return lp_filter(x_constrained, a[0]) - y_constrained+slack_eps
+
+        # # Initial guess and bounds
+        # a0 = [70.0]
+        # cons = {'type': 'ineq', 'fun': constraint}
+        # bounds = [(1e-6, None)]  # Avoid divide-by-zero
+
+        # # Run optimization
+        # result = scipy.optimize.minimize(objective, a0, constraints=cons, bounds=bounds)
+
+        # # Result
+        # if result.success:
+        #     a_fit = result.x[0]
+        #     print("Constrained time-delay constant (above threshold):", a_fit)
+        # else:
+        #     print("Optimization failed:", result.message)
+
+        # omega = np.logspace(-5, 3, 500)
+        # d=scipy.signal.TransferFunction([1], [a_fit, 1])
+        # w_req_dist, disturbanceReq, phaseReq_dist=scipy.signal.bode(d, w=omega)
+        # disturbanceReq = (10 ** (disturbanceReq / 20))
+
+        actualDisturbance=scipy.signal.TransferFunction([1], [70, 1])
+        w_actReq, actualReq, phaseReq_act=scipy.signal.bode(actualDisturbance, w=omega)
+        actualReq = (10 ** (actualReq / 20))
 
 
         # Create a new figure for the plot
         plt.figure()
 
         # Plot all elements in w_k2a_list and mag_k2a_list
-        for idx, (w_k2a, mag_k2a) in enumerate(zip(w_k2a_list, mag_k2a_list), start=1):
-            plt.semilogx(w_k2a, mag_k2a, label=f"G_req-n magnitude K2A {idx}", color='blue', alpha=0.5)
+        # for idx, (w_k2a, mag_k2a) in enumerate(zip(w_k2a_list, mag_k2a_list), start=1):
+        #     plt.semilogx(w_k2a, mag_k2a, label=f"G_req-n magnitude K2A {idx}", color='blue', alpha=0.5)
 
-        # Plot all elements in w_req_list and mag_req_list
-        for idx, (w_req, mag_req) in enumerate(zip(w_req_list, mag_req_list), start=1):
-            plt.semilogx(w_req, mag_req, label=f"Requirement magnitude {idx}", linestyle='dashed', color='darkred', alpha=0.7)
+        # # Plot all elements in w_req_list and mag_req_list
+        # for idx, (w_req, mag_req) in enumerate(zip(w_req_list, mag_req_list), start=1):
+        #     plt.semilogx(w_req, mag_req, label=f"Requirement magnitude {idx}", linestyle='dashed', color='darkred', alpha=0.7)
 
         # Plot the FFT data
         plt.semilogx(p_fft_freq_rad, 1/p_fft_mag, label="FFT of P at bus 7", color=colors[3])
-
         #Plot TSO filter
-        plt.semilogx(w_reqs, 1/actualReq, label="1/D(s)", color=colors[4], linestyle='dashed')
+        plt.semilogx(w_actReq, 1/actualReq, label="1/D(s)", color=colors[4], linestyle='dashed')
+        plt.semilogx(p_fft_freq_rad, 1/func(p_fft_freq_rad, *popt_fft), label="Best low-pass filter describing FFT", color=colors[2], linestyle='dotted')
+
 
         # Plot the fitted low-pass filter
-        plt.semilogx(p_fft_freq_rad, 1/abs(func(p_fft_freq_rad, *popt_fft)), label="Best low-pass filter describing FFT", color=colors[2], linestyle='dotted')
+        # plt.semilogx(p_fft_freq_rad, 1/disturbanceReq, label="Best low-pass filter describing FFT", color=colors[2], linestyle='dotted')
+        # plt.semilogx(w_req_dist, 1/actualReq, label="1/D(s)", color=colors[4], linestyle='dashed')
 
         # Add labels, title, and legend
         plt.yscale('log')

@@ -89,7 +89,7 @@ if __name__ == '__main__':
     # ----------------------------------
     # Setup simulation parameters
     # ----------------------------------
-    t_end = 10
+    t_end = 2000
     x_0 = ps.x_0.copy()
     time_step = 0.02
     sol = dps_sol.ModifiedEulerDAE(ps.state_derivatives, ps.solve_algebraic, 0, x_0, ps.v0,t_end, max_step=time_step)
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     theta = 0.002
     mu_p, mu_q = p_0, q_0
     #mu_p1=p_1
-    sigma_p, sigma_q = 1.3, 0.1
+    sigma_p, sigma_q = 1.25, 0.1
 
     listGenInitial=list(ps.gen['GEN'].par['P'])
     print(ps.f_n)
@@ -171,7 +171,14 @@ if __name__ == '__main__':
     # ----------------------------------
     # Data & Visualization
     # ----------------------------------
-    data = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_7.csv')
+    data1 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_1.csv')
+    data2 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_2_pelton.csv')
+    data3 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_3.csv')
+    data = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_4.csv')
+    data5 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_5.csv')
+    data6 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_6.csv')
+    data7 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_7.csv')
+    data8 = pd.read_csv('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/2024-05/PeltonData/data_set_8.csv')
 
 
     disturbance_folder = r'C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/Figures/disturbance'
@@ -187,7 +194,15 @@ if __name__ == '__main__':
 
     avg_freq = [np.mean(freq) for freq in res['freq']]
     freq2 = data['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq3= data1['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq4= data2['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq5= data3['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq6= data5['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq7= data6['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq8= data7['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
+    freq9= data8['Frequency [Hz*4]'][2:(len(res['t']) + 2)] / 4
     time2 = data['Time [s]'][2:(len(res['t']) + 2)]
+    measured = [freq2, freq3, freq4, freq5, freq6, freq7, freq8, freq9]
 
     timeOutage, freqOutage=GetFreqData('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/Outage-anonymous_(1)/Outage-anonymous.xlsx', 'FI south:Frequency')
 
@@ -210,15 +225,22 @@ if __name__ == '__main__':
     
 
     # Plot frequency comparison
-    plt.figure()
+    fig, ax=plt.subplots(figsize=(8,4))
     # for gen_idx, gen_freq in enumerate(zip(*res['freq']), start=1):  # Transpose res['freq'] to iterate over generators
     #     plt.plot(res['t'], gen_freq, label=f"Generator {gen_idx}", color=colors[gen_idx - 1])
-
-    plt.plot(res['t'], avg_freq, label='Simulated Frequency', color=colors[3])
     #plt.plot(res['t'], exp_freq, label='Expected Frequency', color=colors[1])
     # plt.plot(res['t'], avg_freq, label='Simulated Frequency with PSS', color=colors[3])
     # plt.plot(res['t'][:-1], [(i+50) for i in freq_values], label='Simulated Frequency w/o PSS', color=colors[1], linestyle='dashed')
-    plt.plot(time2, freq2, label='Measured Frequency', color=colors[1])
+    
+    plt.plot(res['t'], avg_freq, label='Simulated Frequency', color=colors[3])
+    arr = np.vstack(measured)
+    lower, upper = arr.min(axis=0), arr.max(axis=0)
+    ax.fill_between(time2, lower, upper, label="Measured Frequency Range", color='gray', alpha=0.2, zorder=1)
+
+
+
+
+
     # plt.plot(timeOutage, freqOutage, label='Measured Frequency', color=colors[1])
     # Add labels, title, and legend
     plt.title('Grid Frequency')
@@ -231,7 +253,18 @@ if __name__ == '__main__':
     plt.legend()
     plt.savefig('C:/Users/haral/PycharmProjects/ProsjektOppgaveTOPS/Figures/FrequencyPlots/grid_frequency_plot.pdf', format='pdf', bbox_inches='tight')
 
-
+    plt.figure()
+    plt.plot(res['t'], avg_freq, label='Simulated Frequency', color=colors[3])
+    plt.plot(res['t'], freq2, label='Measured Frequency', color=colors[1])
+    plt.xlabel('Time [s]')
+    plt.title('Grid Frequency')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Frequency[Hz]')
+    plt.xlim(0, max(res['t']))
+    # Add horizontal dashed lines
+    plt.axhline(49.9, color='gray', linestyle='--', linewidth=1, alpha=0.5)
+    plt.axhline(50.1, color='gray', linestyle='--', linewidth=1, alpha=0.5)
+    plt.legend()
 
 
     # Plot load data
@@ -273,10 +306,19 @@ if __name__ == '__main__':
         # y = (1 / (stdDev * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x - mean) / stdDev) ** 2)
 
         #ax.plot(x, y, label='Normal Distribution of total frequency data', color=colors[0])
-        plot_normalDistribution(avg_freq, ax=ax,  label='Simulated Frequency PDF')
-        plot_normalDistribution(freq2, ax=ax, label='Real Data Frequency PDF')
+        plot_normalDistribution(avg_freq, ax=ax,  label='Simulated Frequency PDF', zorder=2, linewidth=2)
+        plot_normalDistribution(freq2, ax=ax, label='Real Data Frequency PDFs', color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq3,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq4,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq5,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq6,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq7,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq8,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+        plot_normalDistribution(freq9,label=None, ax=ax,color='gray', alpha=0.4, zorder=1)
+
         #plot_normalDistribution(totalPSD,ax=ax,  label='All Frequency data PDF')
         plt.xlabel('Frequency [Hz]')
+        plt.title('Probability Density Function of Simulated and Real Frequency Data')
         plt.legend()
         plt.show()
 
@@ -297,8 +339,8 @@ if __name__ == '__main__':
     run_codeFFT = input("Plot Load FFT? (y/n): ").strip().lower()
     if run_codeFFT == 'y':
             # Unpack the lists returned by calculateSystemTf
-        w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_reqs, actualReq = calculateSystemTf(model_data)
-
+        w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_reqs, actualReq, FCR_gens = calculateSystemTf(model_data)
+        totalFCR=sum(FCR_gens)
         # Read the CSV file
         stability_df = pd.read_csv(r'C:\Users\haral\PycharmProjects\ProsjektOppgaveTOPS\Figures\FrequencyPlots\stabilityLineK2A.csv')
 
@@ -308,7 +350,7 @@ if __name__ == '__main__':
 
         # Compute FFT data
         p_fft_freq_rad, p_fft_mag = makeFFT(((
-            (res['p_bus_7']) - np.mean(res['p_bus_7']))/60), time_step)
+            (res['p_bus_7']) - np.mean(res['p_bus_7']))/totalFCR), time_step)
         
         # f_fft_freq_rad, f_fft_mag= makeFFT(((
         #     (avg_freq) - np.mean(avg_freq))/0.1), time_step)
@@ -374,11 +416,12 @@ if __name__ == '__main__':
         # Create a new figure for the plot
         plt.figure()
 
-        plt.plot(w_k2a_list[0], mag_k2a_list[0], label="Generator 1 Magnitude", color='darksalmon', alpha=0.8) 
-        plt.plot(w_k2a_list[1], mag_k2a_list[1], label="Generator 2 Magnitude", color='olive', alpha=0.8)
-        plt.plot(w_k2a_list[2], mag_k2a_list[2], label="Generator 3 Magnitude", color='skyblue', alpha=0.8)
-        plt.plot(w_k2a_list[3], mag_k2a_list[3], label="Generator 4 Magnitude", color='plum', alpha=0.8)  
-        plt.plot(w_stab, mag_stab, label="Stability Requirement", color='blue', alpha=0.7) 
+        plt.semilogx(w_k2a_list[0], mag_k2a_list[0], label="Generator 1 Magnitude", color='darksalmon', alpha=0.8) 
+        plt.semilogx(w_k2a_list[1], mag_k2a_list[1], label="Generator 2 Magnitude", color='olive', alpha=0.8)
+        plt.semilogx(w_k2a_list[2], mag_k2a_list[2], label="Generator 3 Magnitude", color='skyblue', alpha=0.8)
+        plt.semilogx(w_k2a_list[3], mag_k2a_list[3], label="Generator 4 Magnitude", color='plum', alpha=0.8)  
+        #plt.plot(w_stab, mag_stab, label="Stability Requirement", color='blue', alpha=0.7) 
+        print(mag_k2a_list[0])
 
 
         # Plot the FFT data
@@ -386,7 +429,7 @@ if __name__ == '__main__':
 
         #Plot TSO filter
         plt.semilogx(w_reqs, 1/actualReq, label="1/D(s)", color=colors[4], linestyle='dashed')
-        plt.semilogx(w_stab, mag_stab, label="Stability Requirement", color='maroon', alpha=0.8, linestyle='dashed')
+        #plt.semilogx(w_stab, mag_stab, label="Stability Requirement", color='maroon', alpha=0.8, linestyle='dashed')
 
         # Plot the fitted low-pass filter
         plt.semilogx(w_req_dist, 1/disturbanceReq, label="Best low-pass filter describing FFT", color=colors[2], linestyle='dotted')
@@ -409,9 +452,17 @@ if __name__ == '__main__':
     if runPSD == 'y':
         omega = np.linspace(-5, 10, 5000)
 
-        f2, Pxx2 = scipy.signal.periodogram(freq2, 50)
-        Pxx2_dB = 20 * np.log10(abs(Pxx2))
-        plt.plot(f2, Pxx2_dB, label='Real Data pelton')
+        # Combine all measured frequency data into a single array
+        all_measured_freq = np.concatenate([freq2, freq3, freq4, freq5, freq6, freq7, freq8, freq9])
+
+        # Compute periodogram for the combined measured data
+        f_measured, Pxx_measured = scipy.signal.periodogram(all_measured_freq, 50)
+        Pxx_measured_dB = 20 * np.log10(np.abs(Pxx_measured))
+
+        # Plot measured PSD alongside simulated data
+        plt.plot(f_measured, Pxx_measured_dB, label='Measured Data (all sets)', alpha=0.7)
+
+
 
         ###Simulated Frequency Data PSD###
         f1, Pxx1 = scipy.signal.periodogram(avg_freq, 50)

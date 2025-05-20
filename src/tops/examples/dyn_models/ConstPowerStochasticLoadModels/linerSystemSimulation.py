@@ -75,20 +75,20 @@ sys_cl = lti(num_fb, den_fb)
 
 
 # === 4) SIMULATE RESPONSE TO A STEP DISTURBANCE ===
-t = time_values       # 0…50 s
-d = [dist*10 for dist in disturbance_values]                # unit‐step disturbance
-t_out, y_out, _ = lsim(sys_cl, U=d, T=t)
+# t = time_values       # 0…50 s
+# d = [dist*10 for dist in disturbance_values]                # unit‐step disturbance
+# t_out, y_out, _ = lsim(sys_cl, U=d, T=t)
 
-# === 5) PLOT ===
-plt.figure(figsize=(8,4))
-plt.plot(t_out, -y_out, label='Δf (to step d)')
-plt.xlabel('Time [s]')
-plt.ylabel('Frequency deviation Δf')
-plt.title('Closed‐Loop Response to disturbance')
-plt.grid(True)
-plt.legend()
-plt.tight_layout()
-plt.show()
+# # === 5) PLOT ===
+# plt.figure(figsize=(8,4))
+# plt.plot(t_out, -y_out, label='Δf (to step d)')
+# plt.xlabel('Time [s]')
+# plt.ylabel('Frequency deviation Δf')
+# plt.title('Closed‐Loop Response to disturbance')
+# plt.grid(True)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
 
 
 import numpy as np
@@ -172,14 +172,15 @@ den_cl = np.polyadd(
 sys_cl = lti(num_cl, den_cl)
 
 # === 6) SIMULATE A STEP DISTURBANCE THROUGH THE LOOP ===
-t = time_values      # 0…50 s
-d = disturbance_values              # unit-step disturbance
+#t = time_values      # 0…50 s
+t=np.arange(0, 100, 0.2)
+d = np.ones_like(t)              # unit-step disturbance
 t_out, y_out, _ = lsim(sys_cl, U=d, T=t)
 
 # === 7) PLOT ===
 plt.figure(figsize=(8,4))
 plt.plot(t_out, -y_out, label='Δf to step d')
-plt.plot(t, freq_values, label='From TOPS')
+#plt.plot(t, freq_values, label='From TOPS')
 plt.xlabel('Time [s]')
 plt.ylabel('Δf [Hz]')
 plt.title('Closed-Loop Response with $G_p$ in place of FCR-unit')

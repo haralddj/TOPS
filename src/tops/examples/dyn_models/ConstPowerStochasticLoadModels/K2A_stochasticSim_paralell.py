@@ -51,11 +51,15 @@ class ConstPowerLoad(DAEModel):
         return self.bus_idx_red['terminal'], s_inj
 
 
-def simulate_sys(sim_i, H, R, r, Tf, Tr, Tg, Tw):
+def simulate_sys(sim_i, H, R, r, Tf, Tr, Tg, Tw, Sn, P, L):
     model = model_data.load()
     #Set overnor parameters:
+    idxGen=0
     for gen in model['generators']['GEN'][1:]:
+        gen[2] = Sn[idxGen]
+        gen[4] = P[idxGen]
         gen[6] = H
+        idxGen+=1
         #gen[7] = D
     #Set the time constants of the governors
     for gov in model['gov']['HYGOV'][1:]:
@@ -65,7 +69,10 @@ def simulate_sys(sim_i, H, R, r, Tf, Tr, Tg, Tw):
         gov[5]=Tr
         gov[6]=Tg
         gov[8]=Tw
-
+    idxLoad=0
+    for load in model['loads'][1:]:
+        load[2]=L[idxLoad]
+        idxLoad+=1
 
     # ----------------------------------
     # Load model and initialize system
@@ -85,7 +92,7 @@ def simulate_sys(sim_i, H, R, r, Tf, Tr, Tg, Tw):
     # ----------------------------------
     # Setup simulation parameters
     # ----------------------------------
-    t_end = 2000
+    t_end = 30
     x_0 = ps.x_0.copy()
     time_step = 0.02
     t_save=0.02
@@ -133,20 +140,24 @@ def simulate_sys(sim_i, H, R, r, Tf, Tr, Tg, Tw):
         freqs=(((ps.gen['GEN'].speed(x, v).copy() * 50)) + 50)
         [res['f%d' % i].append(freq) for i, freq in enumerate(freqs)]
         k=int(t_save/time_step)
-        filename = f"res_sim_{sim_i}_H_{H}_R_{R}_r_{r}_Tf_{Tf}_Tr_{Tr}_Tg_{Tg}_Tw_{Tw}.parquet"
+        filename = f"res_sim_{sim_i}_H_{H}_R_{R}_r_{r}_Tf_{Tf}_Tr_{Tr}_Tg_{Tg}_Tw_{Tw}_Sn_{Sn}_P_{P}_L_{L}.parquet"
         pd.DataFrame(data=res).iloc[::, :].to_parquet(os.path.join(output_folder, filename))
 
-n_sim = 1
+n_sim = 50
 sim_i = np.arange(n_sim)
 
 
-case1=[6, 0.12, 0.65, 0.05, 5.7, 0.5, 1.1]
-case2=[6, 0.12, 0.65, 0.05, 10.7, 0.5, 1.1]
-case3=[6, 0.12, 0.65, 0.05, 5.7, 0.5, 3]
-case4=[6, 0.12, 1, 0.05, 5.7, 0.5, 1.1]
-case5=[4.5, 0.12, 0.65, 0.05, 5.7, 0.5, 1.1]
 
-cases = [case1, case2, case3, case4, case5]
+case1=[6, 0.12, 0.65, 0.05, 5.7, 0.5, 1.1, [900,900,900,900], [700,700,719,700], [967.0,1767.0]]
+case2=[6, 0.12, 0.65, 0.05, 10.7, 0.5, 1.1,[900,900,900,900], [700,700,719,700], [967.0,1767.0]]
+case3=[6, 0.12, 0.65, 0.05, 5.7, 0.5, 3, [900,900,900,900], [700,700,719,700], [967.0,1767.0]]
+case4=[6, 0.12, 1, 0.05, 5.7, 0.5, 1.1, [900,900,900,900], [700,700,719,700], [967.0,1767.0]]
+case5=[4.5, 0.12, 0.65, 0.05, 5.7, 0.5, 1.1, [900,900,900,900], [700,700,719,700], [967.0,1767.0]]
+case6=[6, 0.12, 0.65, 0.05, 5.7, 0.5, 1.1, [600,600,600,600], [400,400,419,400], [367.0,1167.0]]
+case7=[6, 0.12, 0.65, 0.05, 5.7, 0.5, 1.1, [900,300,500,700], [700,100,319,500], [367.0,1167.0]]
+
+
+cases = [case1, case2, case3, case4, case5, case6, case7]
 
 # build a list of (sim_i, *case) for each sim_i in 0..n_sim-1 and each case
 items = [
@@ -164,7 +175,7 @@ n_processes = 2
 if __name__ == '__main__':
     start = time.time()
 
-    cases = [case1, case2, case3, case4, case5]
+    cases = [case1, case2, case3, case4, case5, case6, case7]
     items = [(i, *case) for i in range(n_sim) for case in cases]
 
     with Pool(n_processes) as pool:

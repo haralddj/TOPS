@@ -267,8 +267,30 @@ def returnSystemTf(model_data):
 
     ############ With K2A parameters #####################
     DeltaP_FCRN_K2a = 60  # MW
-    S_n_FCRN_k2a = 3600  # MW
+    S_n_FCRN_k2a = 0  # MW
 
+
+    DeltaP_FCRN_K2a = 0  # MW
+    S_n_FCRN_k2a = 0  # MW
+    
+
+    FCR_gens=[]
+
+
+
+    for gen_idx, gen in enumerate(model['generators']['GEN'][1:], start=1):  # Skip the first entry (header)
+        R = model['gov']['HYGOV'][gen_idx][2]
+        H = gen[6]
+        Dt = model['gov']['HYGOV'][gen_idx][10]
+        Kd = (2 / 40) * gen[7] / gen[2]
+        S_n_FCRN_k2a += gen[2]
+        FCR_gens.append((Deltaf_FCRN/f_0)/(R/gen[2]))
+    
+    DeltaP_FCRN_K2a=sum(FCR_gens)
+
+
+    print("DeltaP:", DeltaP_FCRN_K2a)
+    print("S_n:", S_n_FCRN_k2a)
 
     Hsys = calculateSystemInertia(model)  # s
     GFCR_N = (DeltaP_FCRN / Deltaf_FCRN) * (f_0 / S_n_FCRN) * 1 / (2 * 4.524 * s + 0.01 * f_0)
@@ -322,13 +344,13 @@ def returnSystemTf(model_data):
         G_req_n_list.append(G_req_n)
         G_req_n_k2a_list.append(G_req_n_k2a)
         G_req_n_reduction_list.append(G_req_n_reduction)
-    return G_req_n_list, G_req_n_k2a_list, G_req_n_reduction_list
+    return G_req_n_list, G_req_n_k2a_list, G_req_n_reduction_list, FCR_gens
 
 
 
 def calculateSystemTf(model_data):
     # Get the lists of transfer functions from returnSystemTf
-    G_req_n_list, G_req_n_k2a_list, G_req_n_reduction_lis= returnSystemTf(model_data)
+    G_req_n_list, G_req_n_k2a_list, G_req_n_reduction_lis, FCR_gens= returnSystemTf(model_data)
 
     # Initialize the frequency range for Bode plots
     omega = np.logspace(-5, 3, 500)
@@ -385,7 +407,7 @@ def calculateSystemTf(model_data):
 
 
     # Return all results as lists
-    return w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_req, actualReq
+    return w_list, mag_list, w_k2a_list, mag_k2a_list, w_req_list, mag_req_list, w_req, actualReq, FCR_gens
 
 #calculateSystemTf(model_data)
 

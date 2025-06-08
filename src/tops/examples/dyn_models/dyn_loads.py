@@ -18,7 +18,7 @@ colors=ws.film_palette('Darjeeling limited')
 if __name__ == '__main__':
 
     # Load model
-    import tops.examples.user_models.user_lib.ProsjektoppgaveMaster.min_k2a as model_data
+    import tops.examples.user_models.user_lib.k2aTunedToGrid.min_k2a as model_data
     #import src.tops.ps_models.k2a as model_data
     importlib.reload(model_data)
     model = model_data.load()

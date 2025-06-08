@@ -3,3 +3,8 @@ scipy
 matplotlib
 pandas
 ipympl
+pathlib
+statsmodels
+sympy
+wesanderson
+

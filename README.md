@@ -1,4 +1,9 @@
 # TOPS (**T**iny **O**pen **P**ower System **S**imulator)
+
+##########################################################
+#################README for TOPS main#####################
+##########################################################
+
 **Note**: This repository was previously called DynPSSimPy.
 
 
@@ -24,3 +29,30 @@ If you use this code for your research, please cite [this paper](https://arxiv.o
 
 # Contact
 [Hallvar Haugdal](mailto:hallvhau@gmail.com)
+
+##########################################################
+###########README for Stochastic Load Simualtions#########
+##########################################################
+
+This branch is an extension of the original TOPS repocitory for simulating and validating stochasticity using constant power loads.
+# In "..\src\tops\examples\dyn_models\Stochastic_Constant_Power_Loads" 
+all simulator files are found. This entails the power system simulators with
+constant power loads along with several ways of comparing frequencies and testing the model units against the frequency performance requirement.
+This folder also contains the file used to compare the nonlinear tops system and the linear requirement representation for the same disturbance.
+
+# In "...src\tops\examples\user_models\user_lib\FreqPerformanceTool"
+The utility functions used to compare and validate frequency behavior is stored.
+The function for simulating an Euler-Maryama scheme, and several functions for statistical analysis are also stored here.
+
+# In "...src\tops\examples\user_models\user_lib\k2aTunedToGrid\k2aTuning.py" 
+the k2a model, as tuned to behave as the nordic grid for a given large disturbane is found.
+
+# In "...\storage_simulationData"
+a csv file for a large disturbance is stored to be used as an example when running linearSystemSimulation.py
+
+# In "...\HistoricFreqData"
+The historic frequency data from the Nordic Grid used throughout this thesis has been stored. 
+Outage_anonymous(1) contains the frequency data for a large disturbance (1400MW).
+PeltonData contains 8 hour datasets used for stochastic simulation comparisons.
+Taajuus2024-05 is data from normal operation with a lower frequency sample rate than PeltonData.
+

@@ -6,6 +6,14 @@ import tops.dynamic as dps
 from tops.solvers_sde import EulerDAE_SDE
 import numpy as np
 
+
+
+
+###Used in Porject thesis###
+###Not constant power loads###
+
+
+
 if __name__ == '__main__':
 
     # Load model
@@ -24,7 +32,7 @@ if __name__ == '__main__':
 
     t_end = 30
     # Solver
-    sol = EulerDAE_SDE(ps.state_derivatives, ps.solve_algebraic, 0, ps.x_0, t_end, max_step=5e-3, dim_w = 4)
+    sol = EulerDAE_SDE(ps.state_derivatives, ps.solve_algebraic, 0, ps.x_0, t_end, max_step=2e-2, dim_w = 4)
 
     def b_func(t, x, v):
         mat = np.zeros((len(sol.x), sol.dim_w))

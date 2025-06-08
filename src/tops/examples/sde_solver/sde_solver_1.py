@@ -9,7 +9,7 @@ from tops.examples.user_models.user_lib.MyTools.Statistics import *
 if __name__ == '__main__':
 
     # Load model
-    import tops.examples.user_models.user_lib.ProsjektoppgaveMaster.min_k2a as model_data
+    import tops.examples.user_models.user_lib.k2aTunedToGrid.min_k2a as model_data
     model = model_data.load()
     model['loads'] = {'DynamicLoadFiltered':  [#model['loads']}
         model['loads'][0] + ['T_g', 'T_b'],
